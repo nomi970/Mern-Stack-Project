@@ -42,7 +42,7 @@ const SignupPage = () => {
         { to: "/forgot-password", label: "Forgot password?" }
       ]}
     >
-      <form className="space-y-3" onSubmit={handleSubmit(onSubmit)}>
+      <form className="space-y-4" onSubmit={handleSubmit(onSubmit)}>
         <Input label="Name" placeholder="John Doe" error={errors.name?.message} {...register("name")} />
         <Input
           label="Email"
@@ -59,7 +59,7 @@ const SignupPage = () => {
           {...register("password")}
         />
         {submitError && <p className="rounded bg-red-50 p-2 text-sm text-red-700">{submitError}</p>}
-        <Button type="submit" disabled={isSubmitting}>
+        <Button type="submit" disabled={isSubmitting} className="w-full">
           {isSubmitting ? "Creating account..." : "Signup"}
         </Button>
       </form>

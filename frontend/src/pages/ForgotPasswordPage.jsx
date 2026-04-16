@@ -41,7 +41,7 @@ const ForgotPasswordPage = () => {
         { to: "/signup", label: "Create account" }
       ]}
     >
-      <form className="space-y-3" onSubmit={handleSubmit(onSubmit)}>
+      <form className="space-y-4" onSubmit={handleSubmit(onSubmit)}>
         <Input
           label="Email"
           type="email"
@@ -51,7 +51,7 @@ const ForgotPasswordPage = () => {
         />
         {submitError && <p className="rounded bg-red-50 p-2 text-sm text-red-700">{submitError}</p>}
         {successMessage && <p className="rounded bg-green-50 p-2 text-sm text-green-700">{successMessage}</p>}
-        <Button type="submit" disabled={isSubmitting}>
+        <Button type="submit" disabled={isSubmitting} className="w-full">
           {isSubmitting ? "Submitting..." : "Send reset request"}
         </Button>
       </form>

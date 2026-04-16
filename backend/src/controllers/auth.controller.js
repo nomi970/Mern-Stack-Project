@@ -33,16 +33,30 @@ export const forgotPasswordController = asyncHandler(async (req, res) => {
   res.status(200).json({
     success: true,
     message: result.message,
+    data: null
+  });
+});
+
+export const verifyOtpController = asyncHandler(async (req, res) => {
+  const result = await authService.verifyPasswordResetOtp({
+    email: req.body.email,
+    otp: req.body.otp
+  });
+
+  res.status(200).json({
+    success: true,
+    message: result.message,
     data: {
-      resetUrl: result.resetUrl
+      resetToken: result.resetToken
     }
   });
 });
 
 export const resetPasswordController = asyncHandler(async (req, res) => {
   const result = await authService.resetPassword({
-    token: req.params.token,
-    password: req.body.password
+    email: req.body.email,
+    newPassword: req.body.newPassword,
+    resetToken: req.body.resetToken
   });
 
   res.status(200).json({

@@ -4,7 +4,7 @@ const strongPasswordMessage =
   "Password must be at least 8 characters and include uppercase, lowercase, and number.";
 
 export const loginSchema = yup.object({
-  name: yup.string().trim().required("Name is required."),
+  email: yup.string().email("Enter a valid email address.").required("Email is required."),
   password: yup.string().required("Password is required.")
 });
 

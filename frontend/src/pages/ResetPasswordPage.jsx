@@ -42,8 +42,12 @@ const ResetPasswordPage = () => {
   };
 
   return (
-    <AuthShell title="Reset Password" subtitle="Set your new password securely." footerLinks={[{ to: "/login", label: "Back to login" }]}>
-      <form className="space-y-3" onSubmit={handleSubmit(onSubmit)}>
+    <AuthShell
+      title="Reset Password"
+      subtitle="Set your new password securely."
+      footerLinks={[{ to: "/login", label: "Back to login" }]}
+    >
+      <form className="space-y-4" onSubmit={handleSubmit(onSubmit)}>
         <Input label="Reset Token" placeholder="Paste token" error={errors.token?.message} {...register("token")} />
         <Input
           label="Password"
@@ -61,7 +65,7 @@ const ResetPasswordPage = () => {
         />
         {submitError && <p className="rounded bg-red-50 p-2 text-sm text-red-700">{submitError}</p>}
         {successMessage && <p className="rounded bg-green-50 p-2 text-sm text-green-700">{successMessage}</p>}
-        <Button type="submit" disabled={isSubmitting}>
+        <Button type="submit" disabled={isSubmitting} className="w-full">
           {isSubmitting ? "Resetting..." : "Reset password"}
         </Button>
       </form>

@@ -10,13 +10,13 @@ export default async function handler(req, res) {
 
   try {
     await connectDb();
-    const { name, password } = req.body || {};
+    const { email, password } = req.body || {};
 
-    if (!name || !password) {
-      return sendError(res, 400, "Name and password are required.");
+    if (!email || !password) {
+      return sendError(res, 400, "Email and password are required.");
     }
 
-    const user = await User.findOne({ nameLower: name.toLowerCase().trim() });
+    const user = await User.findOne({ email: email.toLowerCase().trim() });
     if (!user) {
       return sendError(res, 401, "Invalid name or password.");
     }

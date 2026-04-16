@@ -4,6 +4,7 @@ import jwt from "jsonwebtoken";
 import User from "../models/user.model.js";
 import ApiError from "../utils/ApiError.js";
 import { env } from "../config/env.js";
+import { sendResetOtpEmail } from "../utils/email.js";
 
 const createToken = (userId) => {
   return jwt.sign({ sub: userId }, env.jwtSecret, { expiresIn: env.jwtExpiresIn });
@@ -61,38 +62,106 @@ export const requestPasswordReset = async (email) => {
   const user = await User.findOne({ email: normalizedEmail });
 
   if (!user) {
-    return { message: "If an account exists for this email, a reset link has been sent." };
+    return { message: "If an account exists for this email, an OTP has been sent." };
   }
 
-  const rawResetToken = crypto.randomBytes(32).toString("hex");
-  const hashedToken = crypto.createHash("sha256").update(rawResetToken).digest("hex");
-  const expiresAt = new Date(Date.now() + env.resetTokenExpiresMinutes * 60 * 1000);
+  const otp = String(Math.floor(100000 + Math.random() * 900000));
+  const otpHash = crypto.createHash("sha256").update(otp).digest("hex");
+  const expiresAt = new Date(Date.now() + env.otpExpiresMinutes * 60 * 1000);
 
-  user.passwordResetToken = hashedToken;
-  user.passwordResetExpires = expiresAt;
+  user.resetOtp = otpHash;
+  user.resetOtpExpiry = expiresAt;
+  user.resetOtpAttempts = 0;
   await user.save();
 
-  const resetUrl = `${env.clientUrl}/reset-password?token=${rawResetToken}`;
+  await sendResetOtpEmail({
+    to: normalizedEmail,
+    otp,
+    expiresMinutes: env.otpExpiresMinutes
+  });
+
+  return { message: "If an account exists for this email, an OTP has been sent." };
+};
+
+export const verifyPasswordResetOtp = async ({ email, otp }) => {
+  const normalizedEmail = email.toLowerCase().trim();
+  const user = await User.findOne({ email: normalizedEmail });
+  if (!user || !user.resetOtp || !user.resetOtpExpiry) {
+    throw new ApiError(400, "Invalid or expired OTP.");
+  }
+
+  if (user.resetOtpExpiry.getTime() < Date.now()) {
+    user.resetOtp = null;
+    user.resetOtpExpiry = null;
+    user.resetOtpAttempts = 0;
+    await user.save();
+    throw new ApiError(400, "OTP has expired.");
+  }
+
+  if (user.resetOtpAttempts >= 5) {
+    throw new ApiError(429, "Too many invalid attempts. Please request a new OTP.");
+  }
+
+  const incomingOtpHash = crypto.createHash("sha256").update(String(otp)).digest("hex");
+  if (incomingOtpHash !== user.resetOtp) {
+    user.resetOtpAttempts += 1;
+    await user.save();
+    throw new ApiError(400, "Invalid or expired OTP.");
+  }
+
+  user.resetOtp = null;
+  user.resetOtpExpiry = null;
+  user.resetOtpAttempts = 0;
+  await user.save();
+
+  const resetToken = jwt.sign(
+    {
+      sub: user._id.toString(),
+      purpose: "password-reset"
+    },
+    env.jwtSecret,
+    { expiresIn: `${env.otpExpiresMinutes}m` }
+  );
+
   return {
-    message: "If an account exists for this email, a reset link has been sent.",
-    resetUrl: env.nodeEnv === "development" ? resetUrl : undefined
+    message: "OTP verified successfully.",
+    resetToken
   };
 };
 
-export const resetPassword = async ({ token, password }) => {
-  const hashedToken = crypto.createHash("sha256").update(token).digest("hex");
-  const user = await User.findOne({
-    passwordResetToken: hashedToken,
-    passwordResetExpires: { $gt: new Date() }
-  });
-
-  if (!user) {
-    throw new ApiError(400, "Reset token is invalid or has expired.");
+export const resetPassword = async ({ email, newPassword, resetToken }) => {
+  if (!resetToken) {
+    throw new ApiError(400, "resetToken is required.");
   }
 
-  user.password = await bcrypt.hash(password, 12);
+  let payload;
+  try {
+    payload = jwt.verify(resetToken, env.jwtSecret);
+  } catch (_error) {
+    throw new ApiError(400, "Invalid or expired reset token.");
+  }
+
+  if (payload.purpose !== "password-reset") {
+    throw new ApiError(400, "Invalid reset token purpose.");
+  }
+
+  const normalizedEmail = email.toLowerCase().trim();
+  const user = await User.findOne({ email: normalizedEmail });
+
+  if (!user) {
+    throw new ApiError(404, "User not found.");
+  }
+
+  if (payload.sub !== user._id.toString()) {
+    throw new ApiError(400, "Reset token does not match this user.");
+  }
+
+  user.password = await bcrypt.hash(newPassword, 12);
   user.passwordResetToken = null;
   user.passwordResetExpires = null;
+  user.resetOtp = null;
+  user.resetOtpExpiry = null;
+  user.resetOtpAttempts = 0;
   await user.save();
 
   return { message: "Password reset successful." };

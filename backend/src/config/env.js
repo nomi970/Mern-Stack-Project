@@ -10,7 +10,10 @@ export const env = {
   corsOrigin: process.env.CORS_ORIGIN || "*",
   jwtSecret: process.env.JWT_SECRET || "",
   jwtExpiresIn: process.env.JWT_EXPIRES_IN || "1d",
-  resetTokenExpiresMinutes: Number(process.env.RESET_TOKEN_EXPIRES_MINUTES) || 15
+  resetTokenExpiresMinutes: Number(process.env.RESET_TOKEN_EXPIRES_MINUTES) || 15,
+  otpExpiresMinutes: Number(process.env.OTP_EXPIRES_MINUTES) || 10,
+  emailUser: process.env.EMAIL_USER || "",
+  emailPass: process.env.EMAIL_PASS || ""
 };
 
 export const validateRequiredEnv = () => {

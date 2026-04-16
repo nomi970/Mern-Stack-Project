@@ -1,6 +1,4 @@
-import { yupResolver } from "@hookform/resolvers/yup";
 import { useState } from "react";
-import { useForm } from "react-hook-form";
 import { Navigate, useNavigate } from "react-router-dom";
 import AuthShell from "../components/Auth";
 import Button from "../components/Button";
@@ -12,47 +10,80 @@ const LoginPage = () => {
   const navigate = useNavigate();
   const { login, isAuthenticated } = useAuthContext();
   const [submitError, setSubmitError] = useState("");
-  const {
-    register,
-    handleSubmit,
-    formState: { errors, isSubmitting }
-  } = useForm({
-    resolver: yupResolver(loginSchema),
-    mode: "onChange"
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [fieldErrors, setFieldErrors] = useState({
+    email: "",
+    password: ""
+  });
+  const [formData, setFormData] = useState({
+    email: "",
+    password: ""
   });
 
   if (isAuthenticated) return <Navigate to="/" replace />;
 
-  const onSubmit = async (values) => {
+  const handleChange = (event) => {
+    const { name, value } = event.target;
+    setFormData((prev) => ({ ...prev, [name]: value }));
+    setFieldErrors((prev) => ({ ...prev, [name]: "" }));
     setSubmitError("");
+  };
+
+  const onSubmit = async (event) => {
+    event.preventDefault();
+    setSubmitError("");
+    setIsSubmitting(true);
     try {
-      await login({ name: values.name.trim(), password: values.password });
+      await loginSchema.validate(formData, { abortEarly: false });
+      await login({ email: formData.email.trim(), password: formData.password });
       navigate("/");
     } catch (error) {
-      setSubmitError(error.message);
+      if (error.name === "ValidationError") {
+        const errorsMap = { email: "", password: "" };
+        error.inner.forEach((issue) => {
+          if (issue.path && !errorsMap[issue.path]) {
+            errorsMap[issue.path] = issue.message;
+          }
+        });
+        setFieldErrors(errorsMap);
+      } else {
+        setSubmitError(error.message);
+      }
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
   return (
     <AuthShell
       title="Welcome Back"
-      subtitle="Login with your name and password."
+      subtitle="Login with your email and password."
       footerLinks={[
         { to: "/signup", label: "Create account" },
         { to: "/forgot-password", label: "Forgot password?" }
       ]}
     >
-      <form className="space-y-3" onSubmit={handleSubmit(onSubmit)}>
-        <Input label="Name" placeholder="John Doe" error={errors.name?.message} {...register("name")} />
+      <form className="space-y-4" onSubmit={onSubmit}>
+        <Input
+          label="Email"
+          type="email"
+          name="email"
+          placeholder="you@example.com"
+          error={fieldErrors.email}
+          value={formData.email}
+          onChange={handleChange}
+        />
         <Input
           label="Password"
           type="password"
+          name="password"
           placeholder="********"
-          error={errors.password?.message}
-          {...register("password")}
+          error={fieldErrors.password}
+          value={formData.password}
+          onChange={handleChange}
         />
         {submitError && <p className="rounded bg-red-50 p-2 text-sm text-red-700">{submitError}</p>}
-        <Button type="submit" disabled={isSubmitting}>
+        <Button type="submit" disabled={isSubmitting} className="w-full">
           {isSubmitting ? "Logging in..." : "Login"}
         </Button>
       </form>
