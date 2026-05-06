@@ -17,7 +17,7 @@ const mapUser = (user) => ({
   role: user.role
 });
 
-export const signup = async ({ name, email, password }) => {
+export const signup = async ({ name, email, password, role }) => {
   const normalizedEmail = email.toLowerCase().trim();
   const existingUser = await User.findOne({ email: normalizedEmail });
   if (existingUser) {
@@ -25,10 +25,12 @@ export const signup = async ({ name, email, password }) => {
   }
 
   const hashedPassword = await bcrypt.hash(password, 12);
+  const allowedRole = role === "super_admin" ? "super_admin" : role === "visitor" ? "visitor" : "guest";
   const user = await User.create({
     name: name.trim(),
     email: normalizedEmail,
-    password: hashedPassword
+    password: hashedPassword,
+    role: allowedRole
   });
 
   return { token: createToken(user._id.toString()), user: mapUser(user) };

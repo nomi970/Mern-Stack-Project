@@ -17,7 +17,12 @@ export const AuthProvider = ({ children }) => {
       }
       try {
         const currentUser = await authService.me();
-        setUser(currentUser);
+        // If role is not recognized, clear the session
+        if (!["guest", "super_admin"].includes(currentUser?.role)) {
+          localStorage.removeItem("auth_token");
+        } else {
+          setUser(currentUser);
+        }
       } catch (_error) {
         localStorage.removeItem("auth_token");
       } finally {
@@ -32,6 +37,7 @@ export const AuthProvider = ({ children }) => {
     const result = await authService.login(payload);
     localStorage.setItem("auth_token", result.token);
     setUser(result.user);
+    return result.user;
   };
 
   const signup = async (payload) => {
@@ -39,6 +45,7 @@ export const AuthProvider = ({ children }) => {
     const result = await authService.signup(payload);
     localStorage.setItem("auth_token", result.token);
     setUser(result.user);
+    return result.user;
   };
 
   const logout = () => {

@@ -49,9 +49,17 @@ const ForgotPasswordPage = () => {
           error={errors.email?.message}
           {...register("email")}
         />
-        {submitError && <p className="rounded bg-red-50 p-2 text-sm text-red-700">{submitError}</p>}
-        {successMessage && <p className="rounded bg-green-50 p-2 text-sm text-green-700">{successMessage}</p>}
-        <Button type="submit" disabled={isSubmitting} className="w-full">
+        {submitError && (
+          <div className="flex items-center gap-2 rounded-xl border border-red-500/20 bg-red-500/10 px-4 py-3">
+            <p className="text-sm text-red-400">{submitError}</p>
+          </div>
+        )}
+        {successMessage && (
+          <div className="flex items-center gap-2 rounded-xl border border-emerald-500/20 bg-emerald-500/10 px-4 py-3">
+            <p className="text-sm text-emerald-400">{successMessage}</p>
+          </div>
+        )}
+        <Button type="submit" disabled={isSubmitting} className="w-full justify-center py-3">
           {isSubmitting ? "Submitting..." : "Send reset request"}
         </Button>
       </form>

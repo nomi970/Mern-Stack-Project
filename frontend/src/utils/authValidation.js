@@ -14,7 +14,8 @@ export const signupSchema = yup.object({
   password: yup
     .string()
     .matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{8,}$/, strongPasswordMessage)
-    .required("Password is required.")
+    .required("Password is required."),
+  role: yup.string().oneOf(["guest", "super_admin"]).required("Please select a role.")
 });
 
 export const forgotPasswordSchema = yup.object({
